@@ -1,0 +1,2 @@
+certifi==2021.10.8
+xmltodict==0.12.0
