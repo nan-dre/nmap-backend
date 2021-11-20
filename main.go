@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
@@ -10,8 +8,8 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"time"
 
-	xj "github.com/basgys/goxml2json"
 	"github.com/gin-gonic/gin"
 )
 
@@ -164,24 +162,11 @@ func scan(path string) string {
 	return string(stdout)
 }
 
-func convert(path string) *bytes.Buffer {
-	f, err := os.Open(path)
-	if err != nil {
-		log.Fatalf("Could not read output file")
-	}
-	xml := bufio.NewReader(f)
-	json, err := xj.Convert(xml)
-	if err != nil {
-		log.Fatalf("Could not convert xml to json")
-	}
-	return json
-}
-
 func scanWebsite(c *gin.Context) {
-	// currentTime := time.Now()
-	// path := "./output/" + currentTime.Format("2006-01-02-15-04-05") + ".xml"
-	// scan(path)
-	path := "/home/andy/projects/go/nmap-backend/output/2021-11-20-10-58-40.xml"
+	currentTime := time.Now()
+	path := "./output/" + currentTime.Format("2006-01-02-15-04-05") + ".xml"
+	scan(path)
+	// path := "/home/andy/projects/go/nmap-backend/output/2021-11-20-10-58-40.xml"
 	xmlFile, err := os.Open(path)
 	if err != nil {
 		log.Fatalln("Could not open scan file")
