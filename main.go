@@ -140,6 +140,12 @@ type Data struct {
 	} `xml:"runstats"`
 }
 
+type nmapArgs struct {
+	host      string `form:"host" binding:"required"`
+	startPort string `form:"start-port" binding:"required"`
+	endPort   string `form:"end-port" binding:"required"`
+}
+
 func setup() {
 	err := os.MkdirAll("./output", os.ModePerm)
 	if err != nil {
@@ -148,12 +154,9 @@ func setup() {
 	}
 }
 
-func scan(path string) string {
-	app := "nmap"
-	arg0 := "-oX"
-	arg1 := path
-	arg2 := "scanme.nmap.org"
-	cmd := exec.Command(app, arg0, arg1, arg2)
+func scan(path string, args nmapArgs) string {
+	arg0 := args.startPort + "-" + args.endPort
+	cmd := exec.Command("nmap", "-p", arg0, "-oX", path, args.host)
 	stdout, err := cmd.Output()
 	if err != nil {
 		log.Fatalln("Could not scan: ", err)
@@ -162,10 +165,10 @@ func scan(path string) string {
 	return string(stdout)
 }
 
-func scanWebsite(c *gin.Context) {
+func getData(args nmapArgs) Data {
 	currentTime := time.Now()
 	path := "./output/" + currentTime.Format("2006-01-02-15-04-05") + ".xml"
-	scan(path)
+	scan(path, args)
 	// path := "/home/andy/projects/go/nmap-backend/output/2021-11-20-10-58-40.xml"
 	xmlFile, err := os.Open(path)
 	if err != nil {
@@ -174,13 +177,24 @@ func scanWebsite(c *gin.Context) {
 	byteValue, _ := ioutil.ReadAll(xmlFile)
 	var data Data
 	xml.Unmarshal(byteValue, &data)
-	c.IndentedJSON(http.StatusOK, data)
+	return data
 }
 
 func main() {
 	setup()
 	router := gin.Default()
-	router.GET("/scan", scanWebsite)
+	router.LoadHTMLFiles("views/main.html")
+	router.GET("/", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "main.html", nil)
+	})
+	router.POST("/scan", func(c *gin.Context) {
+		var args nmapArgs
+		args.host = c.PostForm("host")
+		args.startPort = c.PostForm("start-port")
+		args.endPort = c.PostForm("end-port")
+		data := getData(args)
+		c.IndentedJSON(http.StatusOK, data)
+	})
 
-	router.Run("localhost:8080")
+	log.Fatal(router.Run("localhost:8080"))
 }
